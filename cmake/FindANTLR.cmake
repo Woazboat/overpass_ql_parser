@@ -1,13 +1,13 @@
-find_package(Java QUIET COMPONENTS Runtime)
+cmake_minimum_required(VERSION 3.18)
 
 if(NOT ANTLR_EXECUTABLE)
   find_program(ANTLR_EXECUTABLE
-               NAMES antlr.jar antlr4.jar antlr-4.jar antlr-4.13.1-complete.jar)
+               NAMES antlr4)
 endif()
 
-if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
+if(ANTLR_EXECUTABLE)
   execute_process(
-      COMMAND ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}
+      COMMAND ${ANTLR_EXECUTABLE}
       OUTPUT_VARIABLE ANTLR_COMMAND_OUTPUT
       ERROR_VARIABLE ANTLR_COMMAND_ERROR
       RESULT_VARIABLE ANTLR_COMMAND_RESULT
@@ -19,8 +19,17 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
   else()
     message(
         SEND_ERROR
-        "Command '${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}' "
+        "Command '${ANTLR_EXECUTABLE}' "
         "failed with the output '${ANTLR_COMMAND_ERROR}'")
+  endif()
+
+  find_file(ANTLR_RUNTIME_HEADER_FILE "antlr4-runtime.h" "antlr4-runtime/antlr4-runtime.h" REQUIRED)
+  if(ANTLR_RUNTIME_HEADER_FILE EQUAL "ANTLR_RUNTIME_HEADER_FILE-NOTFOUND")
+    message(FATAL_ERROR "ANTLR runtime header file not found")
+  else()
+    message("ANTLR runtime header file: ${ANTLR_RUNTIME_HEADER_FILE}")
+    get_filename_component(ANTLR_RUNTIME_HEADER_DIR "${ANTLR_RUNTIME_HEADER_FILE}" DIRECTORY)
+    message("ANTLR runtime header directory: ${ANTLR_RUNTIME_HEADER_DIR}")
   endif()
 
   macro(ANTLR_TARGET Name InputFile)
@@ -33,6 +42,10 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
                           "${ANTLR_MULTI_VALUE_ARGS}"
                           ${ARGN})
 
+    add_library(${Name})
+
+    target_include_directories(${Name} PUBLIC ${ANTLR_RUNTIME_HEADER_DIR})
+
     set(ANTLR_${Name}_INPUT ${InputFile})
 
     get_filename_component(ANTLR_INPUT ${InputFile} NAME_WE)
@@ -43,6 +56,8 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
       set(ANTLR_${Name}_OUTPUT_DIR
           ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp_generated_src/${ANTLR_INPUT})
     endif()
+
+    target_include_directories(${Name} PUBLIC ${ANTLR_${Name}_OUTPUT_DIR})
 
     unset(ANTLR_${Name}_CXX_OUTPUTS)
 
@@ -83,6 +98,8 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
       list(APPEND ANTLR_TARGET_COMPILE_FLAGS -visitor)
     endif()
 
+    target_sources(${Name} PRIVATE ${ANTLR_${Name}_CXX_OUTPUTS})
+
     if(ANTLR_TARGET_PACKAGE)
       list(APPEND ANTLR_TARGET_COMPILE_FLAGS -package ${ANTLR_TARGET_PACKAGE})
     endif()
@@ -103,7 +120,7 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
 
     add_custom_command(
         OUTPUT ${ANTLR_${Name}_OUTPUTS}
-        COMMAND ${Java_JAVA_EXECUTABLE} -jar ${ANTLR_EXECUTABLE}
+        COMMAND ${ANTLR_EXECUTABLE}
                 ${InputFile}
                 -o ${ANTLR_${Name}_OUTPUT_DIR}
                 -no-listener
@@ -113,12 +130,14 @@ if(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
                 ${ANTLR_TARGET_DEPENDS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Building ${Name} with ANTLR ${ANTLR_VERSION}")
+
+    target_link_libraries(${Name} PRIVATE antlr4-runtime)
   endmacro(ANTLR_TARGET)
 
-endif(ANTLR_EXECUTABLE AND Java_JAVA_EXECUTABLE)
+endif(ANTLR_EXECUTABLE)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
     ANTLR
-    REQUIRED_VARS ANTLR_EXECUTABLE Java_JAVA_EXECUTABLE
+    REQUIRED_VARS ANTLR_EXECUTABLE
     VERSION_VAR ANTLR_VERSION)
