@@ -41,46 +41,157 @@ tokens {
 	DUMMY
 }
 
-Return: 'return';
-Continue: 'continue';
+NodeChar: 'n';
+WayChar: 'w';
+RelationChar: 'r';
 
-INT: Digit+;
-Digit: [0-9];
+RelationShort: 'rel';
 
-ID: LETTER (LETTER | '0'..'9')*;
-fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
+Node: 'node';
+Way: 'way';
+Relation: 'relation';
+
+// Rel: 'rel';
+
+// N: 'n';
+// W: 'w';
+// R: 'r';
+
+NWR: 'nwr';
+NW: 'nw';
+NR: 'nr';
+WR: 'wr';
+
+Area: 'area';
+Derived: 'derived';
+
+// RecurseBackwards: 'b';
+
+WayCnt: 'way_cnt';
+WayLink: 'way_link';
+
+Out: 'out';
+
+IdLit: 'id';
+
+
+Around: 'around';
+Poly: 'poly';
+Newer: 'newer';
+Changed: 'changed';
+User: 'user';
+Uid: 'uid';
+UserTouched: 'user_touched';
+UidTouched: 'uid_touched';
+Pivot: 'pivot';
+If: 'if';
+For: 'for';
+Foreach: 'foreach';
+Complete: 'complete';
+Retro: 'retro';
+Compare: 'compare';
+
+Delta: 'delta';
+
+// Out
+Ids: 'ids';
+Skel: 'skel';
+Body: 'body';
+Tags: 'tags';
+Meta: 'meta';
+
+Noid: 'noid';
+
+Geom: 'geom';
+Bb: 'bb';
+Center: 'center';
+
+Asc: 'asc';
+Qt: 'qt';
+
+MapToArea: 'map_to_area';
+IsIn: 'is_in';
+Timeline: 'timeline';
+Local: 'local';
+Convert: 'convert';
+Make: 'make';
+
+Ll: 'll';
+Llb: 'llb';
+
+// Return: 'return';
+// Continue: 'continue';
+
+fragment DIGIT: [0-9];
+INT: DIGIT+;
+
+FLOAT   : DIGIT+ '.' DIGIT*
+        | '.' DIGIT+
+        ;
+
+
+
+
 
 LessThan: '<';
 GreaterThan:  '>';
 Equal: '=';
-And: 'and';
+// Unequal: '!=';
+Tilde: '~';
+// NotTilde: '!~';
+// And: 'and';
 
+Not: '!';
+
+// ExclamationMark: '!';
+
+Period: '.';
 Colon: ':';
 Semicolon: ';';
 Plus: '+';
 Minus: '-';
 Star: '*';
+Underscore: '_';
 OpenPar: '(';
 ClosePar: ')';
-OpenCurly: '{' -> pushMode(Mode1);
-CloseCurly: '}' -> popMode;
+OpenCurly: '{';
+CloseCurly: '}';
+OpenBracket: '[';
+CloseBracket: ']';
 QuestionMark: '?';
-Comma: ',' -> skip;
-Dollar: '$' -> more, mode(Mode1);
-Ampersand: '&' -> type(DUMMY);
+Comma: ',';
+// Comma: ',' -> skip;
+// Dollar: '$' -> more, mode(Mode1);
+// Ampersand: '&' -> type(DUMMY);
+
+ID: LETTER (LETTER | '0'..'9')*;
+fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
+
+UNICODE_ID : [\p{Alpha}\p{General_Category=Other_Letter}] [\p{Alnum}\p{General_Category=Other_Letter}]* ; // match full Unicode alphabetic ids
 
 String: '"' .*? '"';
-Foo: {canTestFoo()}? 'foo' {isItFoo()}? { myFooLexerAction(); };
-Bar: 'bar' {isItBar()}? { myBarLexerAction(); };
-Any: Foo Dot Bar? DotDot Baz;
+// Foo: {canTestFoo()}? 'foo' {isItFoo()}? { myFooLexerAction(); };
+// Bar: 'bar' {isItBar()}? { myBarLexerAction(); };
+// Any: Foo Dot Bar? DotDot Baz;
 
-Comment : '#' ~[\r\n]* '\r'? '\n' -> channel(CommentsChannel);
-WS: [ \t\r\n]+ -> channel(99);
+// Comment : '#' ~[\r\n]* '\r'? '\n' -> channel(CommentsChannel);
+// WS: [ \t\r\n]+ -> channel(99);
 
-fragment Baz: 'Baz';
+BlockComment
+    : '/*' .*? '*/' -> channel(CommentsChannel)
+    ;
 
-mode Mode1;
-Dot: '.';
+LineComment
+    : '//' ~[\r\n]* -> channel(CommentsChannel)
+    ;
 
-mode Mode2;
-DotDot: '..';
+UNICODE_WS : [\p{White_Space}] -> skip; // match all Unicode whitespace
+
+
+// fragment Baz: 'Baz';
+
+// mode Mode1;
+// Dot: '.';
+
+// mode Mode2;
+// DotDot: '..';
