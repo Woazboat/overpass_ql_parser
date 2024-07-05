@@ -71,34 +71,36 @@ void doAfter() {}
 main: statement* EOF;
 
 statement: 
-( settings_st
-| item_st 
-| union_st 
-| diff_st
-| query_st 
-| out_st 
-| map_to_area_st 
-| recurse_st
-| if_st
-| foreach_st
-| for_st
-| complete_st
-| is_in_st
-| timeline_st
-| local_st
-| convert_st
-| make_st
-| retro_st
-| compare_st
-) Semicolon;
+  ( settings_st
+  | item_st 
+  | union_st 
+  | diff_st
+  | query_st 
+  | out_st 
+  | map_to_area_st 
+  | recurse_st
+  | if_st
+  | foreach_st
+  | for_st
+  | complete_st
+  | is_in_st
+  | timeline_st
+  | local_st
+  | convert_st
+  | make_st
+  | retro_st
+  | compare_st
+  ) Semicolon;
 
-settings_st: OpenBracket UNICODE_ID Colon UNICODE_ID CloseBracket Semicolon;
+settings_st: setting_st+ Semicolon;
 
-query_st: type_specifier filter+ output_set_specifier?;
+setting_st: OpenBracket UNICODE_ID Colon (exp_literal | UNICODE_ID) CloseBracket;
+
+// query_st: type_specifier filter+ output_set_specifier?;
+query_st: (UNICODE_ID | Area) filter+ output_set_specifier?;
 
 filter
-  : query_filter
-  | has_kv_filter 
+  : has_kv_filter 
   | bounding_box_filter 
   | recurse_filter 
   | set_filter 
@@ -113,26 +115,42 @@ filter
   | conditional_filter
   ;
 
-query_filter: conditional_filter;
+// query_filter: conditional_filter;
 
 // TODO: case insensitive switch not supported
 has_kv_filter: OpenBracket (has_kv_filter_equals | has_kv_filter_regex | exists_filter) CloseBracket; // TODO: [~"foo"~"bar"] not yet supported
 
-has_kv_filter_equals: String (Not Equal | Equal) String; // TODO: [~"foo"~"bar"] not yet supported
+has_kv_filter_equals: key_value (Not Equal | Equal) key_value; // TODO: [~"foo"~"bar"] not yet supported
 
-has_kv_filter_regex: String (Not Tilde | Tilde) String; // TODO: [~"foo"~"bar"] not yet supported
+has_kv_filter_regex: key_value (Not Tilde | Tilde) key_value; // TODO: [~"foo"~"bar"] not yet supported
 
-exists_filter: Not? String;
+key_value: String | UNICODE_ID;
+
+exists_filter: Not? key_value;
 
 bounding_box_filter: OpenPar bbox ClosePar;
 
 recurse_filter: OpenPar (recurse_filter_member | recurse_filter_way) ClosePar;
+
+recurse_filter_member: recurse_type set_id? recurse_role_restriction?;
+
+// recurse_forward_type: WayChar | RelationChar;
+
+// recurse_backward_type: RecurseBackwards (NodeChar | WayChar | RelationChar);
+
+recurse_type: UNICODE_ID; //recurse_forward_type | recurse_backward_type;
+
+recurse_role_restriction: Colon String;
+
+recurse_filter_way: (WayCnt | WayLink) set_id? Colon INT (Minus INT?)?;
 
 set_filter: set_id;
 
 element_id_filter: OpenPar (INT | IdLit Colon INT (Comma INT)*) ClosePar;
 
 around_filter: OpenPar Around set_id? Colon radius (Comma coordinate_pair)* ClosePar;
+
+radius: number;
 
 polygon_filter: OpenPar Poly Colon String ClosePar; // TODO: proper coordinate parsing
 
@@ -142,13 +160,14 @@ changed_filter: OpenPar Changed Colon String (Comma String)? ClosePar;
 
 user_filter: OpenPar (user_filter_last | user_filter_touched) ClosePar;
 
+// TODO: area filter and recurse filter are ambiguous without any keywords if both use arbitrary IDs
+// e.g. node(area); vs. node(w);
+// -> move to combined grammar (lexer/parser)?
 area_filter: OpenPar Area set_id? ClosePar;
 
 pivot_filter: OpenPar Pivot set_id? ClosePar;
 
-conditional_filter: OpenPar If Colon evaluator ClosePar;
-
-evaluator: ;
+conditional_filter: OpenPar If Colon expression ClosePar;
 
 user_filter_last: (User Colon username_list | Uid Colon uid_list);
 user_filter_touched: (UserTouched Colon username_list | UidTouched Colon uid_list);
@@ -156,7 +175,7 @@ user_filter_touched: (UserTouched Colon username_list | UidTouched Colon uid_lis
 username_list: String (Comma String)*;
 uid_list: INT (Comma INT)*;
 
-radius: FLOAT;
+
 coordinate_pair: FLOAT Comma FLOAT;
 
 out_st: input_set_specifier? Out out_st_params*;
@@ -203,50 +222,69 @@ make_st: Make;
 union_st: OpenPar statement* ClosePar output_set_specifier?;
 diff_st: OpenPar statement Minus statement ClosePar output_set_specifier?;
 
-if_st: If OpenPar evaluator ClosePar OpenCurly statement* CloseCurly;
+if_st: If OpenPar expression ClosePar OpenCurly statement* CloseCurly;
 
+// TODO: older versions of overpass ql used normal parentheses for block?
 foreach_st: Foreach input_set_specifier? output_set_specifier? OpenCurly statement* CloseCurly;
 
-for_st: For input_set_specifier? output_set_specifier? OpenPar evaluator ClosePar OpenCurly statement* CloseCurly;
+for_st: For input_set_specifier? output_set_specifier? OpenPar expression ClosePar OpenCurly statement* CloseCurly;
 
 complete_st: Complete (OpenPar INT ClosePar)? input_set_specifier? output_set_specifier? OpenCurly statement* CloseCurly;
 
-retro_st: Retro OpenPar evaluator ClosePar OpenCurly statement* CloseCurly;
+retro_st: Retro OpenPar expression ClosePar OpenCurly statement* CloseCurly;
 
-compare_st: input_set_specifier? Compare OpenPar (Delta Colon evaluator) ClosePar output_set_specifier? (OpenCurly statement* CloseCurly)?;
+compare_st: input_set_specifier? Compare OpenPar (Delta Colon expression) ClosePar output_set_specifier? (OpenCurly statement* CloseCurly)?;
 
 input_set_specifier: set_id;
 output_set_specifier: Minus GreaterThan set_id;
 
-set_id: Period (ID | Underscore);
+set_id: Period UNICODE_ID; // (ID | Underscore);
 
-type_specifier
-  : NodeChar
-  | Node
-  | WayChar
-  | Way 
-  | RelationChar
-  | RelationShort
-  | Relation 
-  | type_short_combined 
-  | Area 
-  | Derived
+// type_specifier
+//   : NodeChar
+//   | Node
+//   | WayChar
+//   | Way 
+//   | RelationChar
+//   | RelationShort
+//   | Relation 
+//   | type_short_combined 
+//   | Area 
+//   | Derived
+//   ;
+
+// type_short_combined: NWR | NW | NR | WR;
+
+expression
+  : exp_literal 
+  | exp_aggregator_function 
+  | exp_container_accessor 
+  | exp_unary_op
+  | expression exp_binary_op_func expression // ANTLR handles direct left recursion
+  | expression QuestionMark expression Colon expression;
+
+exp_literal: INT | FLOAT | String;
+
+exp_aggregator_function: (UNICODE_ID Period)? UNICODE_ID OpenPar (expression (Comma expression)*)? ClosePar;
+
+exp_container_accessor: UNICODE_ID OpenBracket expression CloseBracket;
+
+exp_unary_op: (Not | Minus) expression;
+
+// TODO: fix left recursion
+
+exp_ternary_op: expression QuestionMark expression Colon expression;
+
+exp_binary_op_func
+  : Star 
+  | Plus 
+  | Minus 
+  | Equal Equal
+  | Not Equal 
+  | LessThan 
+  | LessThan Equal 
+  | GreaterThan 
+  | GreaterThan Equal
   ;
 
-recurse_filter_member: recurse_type set_id? recurse_role_restriction?;
-
-recurse_type: ID; //recurse_forward_type | recurse_backward_type;
-
-// recurse_forward_type: WayChar | RelationChar;
-
-// recurse_backward_type: RecurseBackwards (NodeChar | WayChar | RelationChar);
-
-recurse_role_restriction: Colon String;
-
-recurse_filter_way: (WayCnt | WayLink) set_id? Colon INT (Minus INT?)?;
-
-// node_t: Node | N;
-// way_t: Way | W;
-// rel_t: Relation | Rel | R;
-
-type_short_combined: NWR | NW | NR | WR;
+number: INT | FLOAT;

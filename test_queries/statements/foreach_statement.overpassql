@@ -1,0 +1,12 @@
+foreach.a->.b
+{
+    node["foo"];
+    node["bar"];
+    /*
+  (
+    ._;
+    >;
+  );
+  //out;
+  */
+}

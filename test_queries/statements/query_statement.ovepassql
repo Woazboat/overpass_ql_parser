@@ -1,0 +1,18 @@
+// one filter
+node[name="Foo"];
+way[name="Foo"];
+rel[name="Foo"];
+nwr[name="Foo"];
+nw[name="Foo"];
+nr[name="Foo"];
+wr[name="Foo"];
+derived[name="Foo"];
+area[name="Foo"];
+
+// many filters
+node[name="Foo"][type="Bar"];
+
+node[name="Foo"]->.a;
+
+// Invalid
+//foo[name="Foo"];

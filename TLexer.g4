@@ -41,29 +41,29 @@ tokens {
 	DUMMY
 }
 
-NodeChar: 'n';
-WayChar: 'w';
-RelationChar: 'r';
+// NodeChar: 'n';
+// WayChar: 'w';
+// RelationChar: 'r';
 
-RelationShort: 'rel';
+// RelationShort: 'rel';
 
-Node: 'node';
-Way: 'way';
-Relation: 'relation';
+// Node: 'node';
+// Way: 'way';
+// Relation: 'relation';
 
-// Rel: 'rel';
+// // Rel: 'rel';
 
-// N: 'n';
-// W: 'w';
-// R: 'r';
+// // N: 'n';
+// // W: 'w';
+// // R: 'r';
 
-NWR: 'nwr';
-NW: 'nw';
-NR: 'nr';
-WR: 'wr';
+// NWR: 'nwr';
+// NW: 'nw';
+// NR: 'nr';
+// WR: 'wr';
 
 Area: 'area';
-Derived: 'derived';
+// Derived: 'derived';
 
 // RecurseBackwards: 'b';
 
@@ -123,13 +123,11 @@ Llb: 'llb';
 // Continue: 'continue';
 
 fragment DIGIT: [0-9];
-INT: DIGIT+;
-
-FLOAT   : DIGIT+ '.' DIGIT*
-        | '.' DIGIT+
+FLOAT   : '-'? DIGIT+ '.' DIGIT*
+        | '-'? '.' DIGIT+
         ;
 
-
+INT: DIGIT+;
 
 
 
@@ -151,7 +149,7 @@ Semicolon: ';';
 Plus: '+';
 Minus: '-';
 Star: '*';
-Underscore: '_';
+//Underscore: '_';
 OpenPar: '(';
 ClosePar: ')';
 OpenCurly: '{';
@@ -164,10 +162,10 @@ Comma: ',';
 // Dollar: '$' -> more, mode(Mode1);
 // Ampersand: '&' -> type(DUMMY);
 
-ID: LETTER (LETTER | '0'..'9')*;
-fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
+// ID: LETTER (LETTER | '0'..'9')*;
+// fragment LETTER : [a-zA-Z\u0080-\u{10FFFF}];
 
-UNICODE_ID : [\p{Alpha}\p{General_Category=Other_Letter}] [\p{Alnum}\p{General_Category=Other_Letter}]* ; // match full Unicode alphabetic ids
+UNICODE_ID : [\p{Alpha}\p{General_Category=Other_Letter}_] [\p{Alnum}\p{General_Category=Other_Letter}_]* ; // match full Unicode alphabetic ids
 
 String: '"' .*? '"';
 // Foo: {canTestFoo()}? 'foo' {isItFoo()}? { myFooLexerAction(); };
